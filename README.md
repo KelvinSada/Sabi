@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SABI — find wetin you sabi
 
-## Getting Started
+A conversational AI skill-discovery coach for young Nigerians. SABI helps
+people explore learning paths based on their natural strengths and interests,
+while taking practical constraints like time, devices, data, electricity, and
+budget into account. Its voice is warm, youthful, and locally grounded, with
+English, Nigerian Pidgin, Yorùbá, and Igbo supported without forced slang. SABI
+favours low-cost experiments and never promises a job or income.
 
-First, run the development server:
+## Run locally
+
+Requirements: Node.js 20.9 or newer and npm.
+
+```bash
+npm install
+Copy-Item .env.example .env.local
+```
+
+Create an [OpenRouter API key](https://openrouter.ai/keys), then add it to
+`.env.local` as `OPENROUTER_API_KEY`. The key is used on the server only. Do
+not use a `NEXT_PUBLIC_` variable or commit `.env.local`.
+
+The app currently uses OpenRouter's free NVIDIA Nemotron model. Free models
+have rate limits and may be temporarily unavailable; OpenRouter's documented
+free-model API limit is 50 requests per day without purchased credits. Free
+model availability can change. Prompts are sent through OpenRouter to the
+selected upstream model provider, so do not enter sensitive personal
+information.
+
+Start the development server and open [http://localhost:3000](http://localhost:3000):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For a public preview, deploy the app and set `OPENROUTER_API_KEY` in the
+deployment environment.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Chat implementation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Chat experience](app/chat-interface.tsx): streaming messages, stop control,
+  mobile composer, and scroll-aware jump-to-latest.
+- [Streaming route](app/api/chat/route.ts): validates the conversation and
+  streams OpenRouter responses with the AI SDK.
+- [Coach configuration and system prompt](lib/ai-config.ts): sets the free
+  model, concise SABI voice, output limit, and guidance for strengths-first,
+  Nigeria-aware advice. The coach uses the learner's replies to identify
+  strengths and explore realistic, low-cost ways to test earning with a
+  suitable skill. There is no fixed conversation or question limit.
 
-## Learn More
+The coach has no live job listings, course prices, or earnings data. It should
+not invent those details or promise outcomes; it encourages learners to verify
+local opportunities and try low-cost projects before paying for training.
 
-To learn more about Next.js, take a look at the following resources:
+## Checks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run build
+```
