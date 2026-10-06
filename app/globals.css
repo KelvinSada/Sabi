@@ -839,8 +839,7 @@ kbd {
 
   .welcome-hero {
     grid-template-columns: 1fr;
-    gap: 22px;
-    margin-bottom: 26px;
+    margin-bottom: 18px;
   }
 
   .welcome h1 {
@@ -855,72 +854,6 @@ kbd {
   }
 
   .discovery-card {
-    display: grid;
-    grid-template-columns: 60px minmax(0, 1fr);
-    align-items: center;
-    column-gap: 14px;
-    padding: 13px 14px;
-  }
-
-  .discovery-art {
-    width: 58px;
-    height: 58px;
-    grid-row: 1 / span 3;
-    margin: 0;
-  }
-
-  .orbit-one {
-    width: 56px;
-    height: 56px;
-  }
-
-  .orbit-two {
-    width: 43px;
-    height: 43px;
-  }
-
-  .orbit-core {
-    width: 34px;
-    height: 34px;
-    border-radius: 11px;
-  }
-
-  .orbit-core svg {
-    width: 23px;
-    height: 23px;
-  }
-
-  .orbit-dot {
-    top: 2px;
-    right: 3px;
-  }
-
-  .discovery-label,
-  .discovery-card h2,
-  .discovery-copy {
-    max-width: none;
-    margin: 0;
-    text-align: left;
-  }
-
-  .discovery-label {
-    align-self: end;
-    font-size: 8px;
-  }
-
-  .discovery-card h2 {
-    align-self: center;
-    font-size: 15px;
-  }
-
-  .discovery-copy {
-    align-self: start;
-    margin-top: 3px;
-    font-size: 10px;
-    line-height: 1.45;
-  }
-
-  .discovery-steps {
     display: none;
   }
 

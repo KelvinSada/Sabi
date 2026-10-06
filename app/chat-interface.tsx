@@ -75,7 +75,7 @@ export default function ChatInterface() {
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
-    if (!scrollArea) return;
+    if (!scrollArea || messages.length === 0) return;
 
     if (shouldStickToBottom.current) {
       scrollArea.scrollTop = scrollArea.scrollHeight;
