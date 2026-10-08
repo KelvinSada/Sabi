@@ -14,35 +14,35 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sabi-psi.vercel.app"),
-  title: "SabiPath | Find your place in tech",
+  title: "Sabi | Find your place in tech",
   description:
-    "Not sure which tech skill is right for you? SabiPath helps young Nigerians match their strengths and interests to a tech path that fits—starting with what they have.",
+    "Not sure which tech skill is right for you? Sabi helps young Nigerians match their strengths and interests to a tech path that fits—starting with what they have.",
   openGraph: {
     type: "website",
     url: "https://sabi-psi.vercel.app",
-    siteName: "SabiPath",
+    siteName: "Sabi",
     locale: "en_NG",
-    title: "SabiPath | Find your place in tech",
+    title: "Sabi | Find your place in tech",
     description:
       "Find a tech skill that fits your strengths, interests, and starting point. A welcoming guide for young Nigerians exploring tech.",
     images: [
       {
-        url: "/sabipath-logo.png",
-        width: 1220,
-        height: 1130,
-        alt: "SabiPath — find your place in tech",
+        url: "/sabi_logo_pic.png",
+        width: 640,
+        height: 640,
+        alt: "Sabi — find your place in tech",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "SabiPath | Find your place in tech",
+    title: "Sabi | Find your place in tech",
     description:
       "Find a tech skill that fits your strengths, interests, and starting point. Made for young Nigerians exploring tech.",
     images: [
       {
-        url: "/sabipath-logo.png",
-        alt: "SabiPath — find your place in tech",
+        url: "/sabi_logo_pic.png",
+        alt: "Sabi — find your place in tech",
       },
     ],
   },

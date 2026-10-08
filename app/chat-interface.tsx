@@ -368,16 +368,17 @@ export default function ChatInterface() {
   return (
     <main className="chat-shell">
       <header className="topbar">
-        <Link className="brand" href="/" aria-label="SabiPath — find your place in tech">
+        <Link className="brand" href="/" aria-label="Sabi — find your place in tech">
           <Image
             className="brand-logo"
-            src="/sabipath-logo.png"
-            alt="SabiPath"
-            width={1220}
-            height={1130}
+            src="/sabi_logo_pic.png"
+            alt=""
+            width={640}
+            height={640}
             priority
           />
           <span className="brand-copy">
+            <span className="brand-name">Sabi</span>
             <span className="brand-product">your place in tech starts here.</span>
           </span>
         </Link>
@@ -534,7 +535,7 @@ export default function ChatInterface() {
         </>
       )}
 
-      <section className="chat-panel" aria-label="SabiPath tech skill discovery chat">
+      <section className="chat-panel" aria-label="Sabi tech skill discovery chat">
         <div
           className="conversation"
           ref={scrollAreaRef}
@@ -548,7 +549,7 @@ export default function ChatInterface() {
                 <div className="hero-copy">
                   <p className="eyebrow">
                     <span className="eyebrow-spark" aria-hidden="true">✳</span>
-                    THERE&apos;S ROOM FOR YOU IN TECH
+                    MADE FOR YOUR TECH JOURNEY
                   </p>
                   <h1>
                     Find your
@@ -559,7 +560,8 @@ export default function ChatInterface() {
                     Tech is more than coding. Whether you&apos;re creative,
                     patient, curious, or good with people, let&apos;s connect
                     what you already do well to a skill you can explore—at your
-                    pace, with what you have.
+                    pace, with what you have. No pressure to have it all figured
+                    out.
                   </p>
                   <div className="strength-tags" aria-label="What we’ll explore">
                     <span>What you&apos;re good at</span>
@@ -642,7 +644,7 @@ export default function ChatInterface() {
                   </div>
                   <div className="message-content">
                     <p className="message-author">
-                      {message.role === "assistant" ? "SabiPath" : "You"}
+                      {message.role === "assistant" ? "Sabi" : "You"}
                     </p>
                     <div className="message-text">
                       {message.parts.map((part, index) =>
@@ -711,7 +713,7 @@ export default function ChatInterface() {
           <form className="composer" onSubmit={handleSubmit}>
             <textarea
               ref={textareaRef}
-              aria-label="Message SabiPath"
+              aria-label="Message Sabi"
               placeholder="Wetin you enjoy or find easy? Tell me—we'll find your tech fit..."
               rows={1}
               value={input}

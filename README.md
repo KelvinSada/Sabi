@@ -1,11 +1,11 @@
-# SabiPath — find your place in tech
+# Sabi — find your place in tech
 
-A conversational tech-skill discovery coach for young Nigerians. SabiPath helps
+A conversational tech-skill discovery coach for young Nigerians. Sabi helps
 people connect their natural strengths and interests to beginner-friendly
 technology skills, while taking practical constraints like time, devices, data,
 electricity, and budget into account. Its voice is warm, youthful, and locally
 grounded, with English, Nigerian Pidgin, Yorùbá, and Igbo supported without
-forced slang. SabiPath favours low-cost experiments and never promises a job or
+forced slang. Sabi favours low-cost experiments and never promises a job or
 income.
 
 The interface uses locally grounded examples while avoiding assumptions about
@@ -49,7 +49,7 @@ deployment environment.
 - [Streaming route](app/api/chat/route.ts): validates the conversation and
   streams OpenRouter responses with the AI SDK.
 - [Coach configuration and system prompt](lib/ai-config.ts): sets the free
-  model, concise SabiPath voice, output limit, and guidance for matching a learner's
+  model, concise Sabi voice, output limit, and guidance for matching a learner's
   strengths to practical tech skills. The coach adapts first steps to available
   devices, time, data, and budget. There is no fixed conversation or question
   limit.
