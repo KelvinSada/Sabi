@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SABI — find wetin you sabi",
+  title: "SabiPath — find your place in tech",
   description:
-    "Find a skill that fits what you sabi, what you enjoy, and the life you live. English, Pidgin, Yorùbá, and Igbo.",
+    "Find a tech skill that fits what you're good at, what you enjoy, and what you have access to. Made for young Nigerians, in English, Pidgin, Yorùbá, and Igbo.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

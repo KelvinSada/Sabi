@@ -1,18 +1,64 @@
 "use client";
 
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, safeValidateUIMessages, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
+const SAVED_CHATS_KEY = "sabipath-saved-chats-v1";
+
+type SavedChat = {
+  id: string;
+  title: string;
+  updatedAt: string;
+  messages: UIMessage[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getChatTitle(messages: UIMessage[]) {
+  const firstUserMessage = messages.find((message) => message.role === "user");
+  const text = firstUserMessage?.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join(" ")
+    .trim();
+
+  if (!text) return "Tech skill chat";
+  return text.length > 48 ? `${text.slice(0, 48).trimEnd()}…` : text;
+}
+
 const starterPrompts = [
   {
-    category: "WHAT YOU SABI",
-    prompt: "I’m not sure what I’m naturally good at",
+    category: "NOT SURE YET",
+    prompt: "I’m new to tech. Help me find a place to start.",
+    icon: (
+      <>
+        <circle
+          cx="12"
+          cy="12"
+          r="8.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+        <path
+          d="M9.7 9a2.4 2.4 0 1 1 4.1 1.7c-1 .9-1.8 1.2-1.8 2.8m0 3v.1"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </>
+    ),
+  },
+  {
+    category: "CREATIVE",
+    prompt: "I like making flyers. What tech skill might fit?",
     icon: (
       <path
-        d="M12 3.5a6.5 6.5 0 0 0-3.9 11.7c.8.6 1.4 1.5 1.5 2.5h4.8c.1-1 .7-1.9 1.5-2.5A6.5 6.5 0 0 0 12 3.5Z"
+        d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"
         stroke="currentColor"
         strokeWidth="1.6"
         strokeLinejoin="round"
@@ -20,8 +66,8 @@ const starterPrompts = [
     ),
   },
   {
-    category: "WHAT YOU ENJOY",
-    prompt: "I enjoy fixing things. What skills could fit?",
+    category: "PROBLEM-SOLVER",
+    prompt: "I enjoy fixing phone or app problems. What paths fit?",
     icon: (
       <path
         d="m14.5 6.2 3.3-3.3a5.2 5.2 0 0 1-6.5 6.5l-7 7a2.1 2.1 0 1 0 3 3l7-7a5.2 5.2 0 0 0 6.5-6.5l-3.3 3.3-3-3Z"
@@ -33,8 +79,8 @@ const starterPrompts = [
     ),
   },
   {
-    category: "START WITH WETIN YOU GET",
-    prompt: "I have a phone and one hour a day. Where do I start?",
+    category: "PHONE ONLY",
+    prompt: "I have a phone and an hour a day. Where can I start?",
     icon: (
       <path
         d="M8 3.8h8a1.7 1.7 0 0 1 1.7 1.7v13a1.7 1.7 0 0 1-1.7 1.7H8a1.7 1.7 0 0 1-1.7-1.7v-13A1.7 1.7 0 0 1 8 3.8Z"
@@ -48,6 +94,7 @@ const starterPrompts = [
 export default function ChatInterface() {
   const {
     messages,
+    setMessages,
     sendMessage,
     regenerate,
     status,
@@ -59,6 +106,12 @@ export default function ChatInterface() {
   });
   const [input, setInput] = useState("");
   const [showJumpButton, setShowJumpButton] = useState(false);
+  const [savedChats, setSavedChats] = useState<SavedChat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isHistoryReady, setIsHistoryReady] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const savedChatsRef = useRef<SavedChat[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const shouldStickToBottom = useRef(true);
@@ -72,6 +125,136 @@ export default function ChatInterface() {
           .join("")
       : "";
   const isWaitingForFirstToken = isGenerating && !lastAssistantText;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSavedChats() {
+      try {
+        const storedChats = localStorage.getItem(SAVED_CHATS_KEY);
+        if (!storedChats) {
+          if (isMounted) setIsHistoryReady(true);
+          return;
+        }
+
+        const parsed: unknown = JSON.parse(storedChats);
+        if (!Array.isArray(parsed)) {
+          throw new Error("Saved chat history has an invalid format.");
+        }
+
+        const loadedChats: SavedChat[] = [];
+        let skippedChats = false;
+        for (const value of parsed) {
+          if (
+            !isRecord(value) ||
+            typeof value.id !== "string" ||
+            value.id.length === 0 ||
+            typeof value.title !== "string" ||
+            typeof value.updatedAt !== "string" ||
+            !Number.isFinite(Date.parse(value.updatedAt)) ||
+            !Array.isArray(value.messages)
+          ) {
+            skippedChats = true;
+            continue;
+          }
+
+          const validation = await safeValidateUIMessages({
+            messages: value.messages,
+          });
+          if (
+            !validation.success ||
+            validation.data.length === 0 ||
+            validation.data.some(
+              (message) => !["user", "assistant"].includes(message.role),
+            )
+          ) {
+            skippedChats = true;
+            continue;
+          }
+
+          loadedChats.push({
+            id: value.id,
+            title: value.title,
+            updatedAt: value.updatedAt,
+            messages: validation.data,
+          });
+        }
+
+        loadedChats.sort(
+          (first, second) =>
+            Date.parse(second.updatedAt) - Date.parse(first.updatedAt),
+        );
+        if (isMounted) {
+          savedChatsRef.current = loadedChats;
+          setSavedChats(loadedChats);
+
+          const mostRecentChat = loadedChats[0];
+          if (mostRecentChat) {
+            setActiveChatId(mostRecentChat.id);
+            setMessages(mostRecentChat.messages);
+          }
+          if (skippedChats) {
+            setHistoryError("Some saved chats could not be opened.");
+          }
+          setIsHistoryReady(true);
+        }
+      } catch (cause) {
+        if (isMounted) {
+          setHistoryError(
+            cause instanceof Error
+              ? `Could not load saved chats: ${cause.message}`
+              : "Could not load saved chats from this device.",
+          );
+          setIsHistoryReady(true);
+        }
+      }
+    }
+
+    void loadSavedChats();
+    return () => {
+      isMounted = false;
+    };
+  }, [setMessages]);
+
+  useEffect(() => {
+    if (!isHistoryReady || messages.length === 0) return;
+
+    const chat: SavedChat = {
+      id: activeChatId ?? crypto.randomUUID(),
+      title: getChatTitle(messages),
+      updatedAt: new Date().toISOString(),
+      messages,
+    };
+    const updatedChats = [
+      chat,
+      ...savedChatsRef.current.filter((savedChat) => savedChat.id !== chat.id),
+    ];
+
+    try {
+      localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(updatedChats));
+      savedChatsRef.current = updatedChats;
+      setSavedChats(updatedChats);
+      setHistoryError("");
+      if (!activeChatId) setActiveChatId(chat.id);
+    } catch (cause) {
+      setHistoryError(
+        cause instanceof Error
+          ? `This chat could not be saved on this device: ${cause.message}`
+          : "This chat could not be saved on this device.",
+      );
+    }
+  }, [activeChatId, isHistoryReady, messages]);
+
+  useEffect(() => {
+    if (!isHistoryOpen) return;
+
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setIsHistoryOpen(false);
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isHistoryOpen]);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
@@ -106,6 +289,57 @@ export default function ChatInterface() {
     setShowJumpButton(false);
   }
 
+  function startNewChat() {
+    if (isGenerating) void stop();
+    setMessages([]);
+    setInput("");
+    clearError();
+    setActiveChatId(null);
+    setIsHistoryOpen(false);
+    setShowJumpButton(false);
+    shouldStickToBottom.current = true;
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "";
+    }
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = 0;
+    }
+  }
+
+  function openSavedChat(chat: SavedChat) {
+    if (isGenerating) void stop();
+    setMessages(chat.messages);
+    setActiveChatId(chat.id);
+    setInput("");
+    clearError();
+    setIsHistoryOpen(false);
+    setShowJumpButton(false);
+    shouldStickToBottom.current = true;
+    if (textareaRef.current) textareaRef.current.style.height = "";
+    if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0;
+  }
+
+  function deleteSavedChat(chat: SavedChat) {
+    const remainingChats = savedChatsRef.current.filter(
+      (savedChat) => savedChat.id !== chat.id,
+    );
+
+    try {
+      localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(remainingChats));
+      savedChatsRef.current = remainingChats;
+      setSavedChats(remainingChats);
+      setHistoryError("");
+      if (activeChatId === chat.id) startNewChat();
+    } catch (cause) {
+      setHistoryError(
+        cause instanceof Error
+          ? `Could not delete this saved chat: ${cause.message}`
+          : "Could not delete this saved chat from this device.",
+      );
+    }
+  }
+
   function submitMessage(text: string) {
     const trimmedText = text.trim();
     if (!trimmedText || isGenerating) return;
@@ -134,24 +368,174 @@ export default function ChatInterface() {
   return (
     <main className="chat-shell">
       <header className="topbar">
-        <Link className="brand" href="/" aria-label="SABI — find wetin you sabi">
+        <Link className="brand" href="/" aria-label="SabiPath — find your place in tech">
           <Image
             className="brand-logo"
-            src="/sabi_actual_logo.png"
+            src="/sabi_logo_pic.png"
             alt=""
-            width={1920}
-            height={1280}
+            width={640}
+            height={640}
             priority
           />
-          <span className="brand-product">find wetin you sabi.</span>
+          <span className="brand-copy">
+            <span className="brand-name">SabiPath</span>
+            <span className="brand-product">your place in tech starts here.</span>
+          </span>
         </Link>
-        <div className="topbar-status">
-          <span className="status-spark" aria-hidden="true">✳</span>
-          <span>For your next move</span>
+        <div className="topbar-actions">
+          <button
+            className="history-button"
+            onClick={() => setIsHistoryOpen((isOpen) => !isOpen)}
+            type="button"
+            aria-expanded={isHistoryOpen}
+            aria-controls="saved-chats-panel"
+          >
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                d="M4 5.5h12M4 10h12M4 14.5h8"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span>Chats</span>
+            {savedChats.length > 0 && (
+              <span className="history-count">{savedChats.length}</span>
+            )}
+          </button>
+          <div className="topbar-status">
+            <span className="status-spark" aria-hidden="true">✳</span>
+            <span>Your next move in tech</span>
+          </div>
+          {messages.length > 0 && (
+            <button
+              className="new-chat-button"
+              onClick={startNewChat}
+              type="button"
+              aria-label="Start a new chat"
+            >
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M3.5 9a6.5 6.5 0 1 1 1.9 4.6M3.5 4.5V9h4.5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>New chat</span>
+            </button>
+          )}
         </div>
       </header>
 
-      <section className="chat-panel" aria-label="SABI skill discovery chat">
+      {isHistoryOpen && (
+        <>
+          <button
+            className="history-backdrop"
+            type="button"
+            aria-label="Close saved chats"
+            onClick={() => setIsHistoryOpen(false)}
+          />
+          <aside
+            className="history-panel"
+            id="saved-chats-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="saved-chats-heading"
+            aria-label="Saved chats"
+          >
+            <div className="history-panel-heading">
+              <div>
+                <p className="history-eyebrow">YOUR JOURNEY</p>
+                <h2 id="saved-chats-heading">Saved chats</h2>
+              </div>
+              <button
+                className="history-close"
+                onClick={() => setIsHistoryOpen(false)}
+                type="button"
+                aria-label="Close saved chats"
+              >
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path
+                    d="m5 5 10 10M15 5 5 15"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="history-description">
+              Pick up where you left off, anytime on this device.
+            </p>
+            <button
+              className="history-new-chat"
+              onClick={startNewChat}
+              type="button"
+            >
+              <span aria-hidden="true">＋</span>
+              Start a new chat
+            </button>
+            {historyError && (
+              <p className="history-error" role="alert">{historyError}</p>
+            )}
+            <div className="history-list" aria-live="polite">
+              {!isHistoryReady ? (
+                <p className="history-empty">Loading your chats…</p>
+              ) : savedChats.length === 0 ? (
+                <p className="history-empty">
+                  Your chats will show up here after you start a conversation.
+                </p>
+              ) : (
+                savedChats.map((chat) => (
+                  <div
+                    className={`history-item${chat.id === activeChatId ? " history-item-active" : ""}`}
+                    key={chat.id}
+                  >
+                    <button
+                      className="history-item-open"
+                      onClick={() => openSavedChat(chat)}
+                      type="button"
+                      aria-current={chat.id === activeChatId ? "page" : undefined}
+                    >
+                      <span className="history-item-title">{chat.title}</span>
+                      <span className="history-item-date">
+                        {new Date(chat.updatedAt).toLocaleDateString("en-NG", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </button>
+                    <button
+                      className="history-delete"
+                      onClick={() => deleteSavedChat(chat)}
+                      type="button"
+                      aria-label={`Delete ${chat.title}`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path
+                          d="M4.5 6h11m-9.5 0 .6 10h7.8l.6-10M8 6V4h4v2m-3 3v4m2-4v4"
+                          stroke="currentColor"
+                          strokeWidth="1.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="history-storage-note">
+              Chats are saved privately in this browser on this device.
+            </p>
+          </aside>
+        </>
+      )}
+
+      <section className="chat-panel" aria-label="SabiPath tech skill discovery chat">
         <div
           className="conversation"
           ref={scrollAreaRef}
@@ -165,23 +549,23 @@ export default function ChatInterface() {
                 <div className="hero-copy">
                   <p className="eyebrow">
                     <span className="eyebrow-spark" aria-hidden="true">✳</span>
-                    NO BE ONE-SIZE-FITS-ALL
+                    THERE&apos;S ROOM FOR YOU IN TECH
                   </p>
                   <h1>
-                    You sabi
+                    Find your
                     <br />
-                    <span>something.</span>
+                    <span>place in tech.</span>
                   </h1>
                   <p className="welcome-copy">
-                    Everybody get something dem sabi. Let&apos;s find yours —
-                    what comes naturally, what you enjoy, and what makes sense
-                    for your life right now. Then discover how you can earn
-                    from your skills.
+                    Tech is more than coding. Whether you&apos;re creative,
+                    patient, curious, or good with people, let&apos;s connect
+                    what you already do well to a skill you can explore—at your
+                    pace, with what you have.
                   </p>
                   <div className="strength-tags" aria-label="What we’ll explore">
-                    <span>Wetin you sabi</span>
-                    <span>Wetin you enjoy</span>
-                    <span>Wetin you get</span>
+                    <span>What you&apos;re good at</span>
+                    <span>What you enjoy</span>
+                    <span>What you have access to</span>
                   </div>
                 </div>
 
@@ -200,22 +584,22 @@ export default function ChatInterface() {
                     </span>
                     <span className="orbit-dot" />
                   </div>
-                  <p className="discovery-label">FIND YOUR STRENGTH. EXPLORE HOW IT CAN EARN.</p>
-                  <h2>Small-small, you go find your thing.</h2>
+                  <p className="discovery-label">NO BE ONLY CODING</p>
+                  <h2>Different strengths. Different paths into tech.</h2>
                   <p className="discovery-copy">
-                    We start with you. The rest go follow.
+                    Start with what you enjoy. We&apos;ll figure out what could fit.
                   </p>
                   <div className="discovery-steps">
-                    <span><i>01</i> Notice wetin comes naturally</span>
-                    <span><i>02</i> Follow wetin interests you</span>
-                    <span><i>03</i> Start with wetin you get</span>
+                    <span><i>01</i> Tell me what comes naturally</span>
+                    <span><i>02</i> Find a skill that fits you</span>
+                    <span><i>03</i> Try am small-small, your way</span>
                   </div>
                 </aside>
               </div>
 
               <div className="suggestions-heading">
-                <span>WHERE YOU WAN START?</span>
-                <span>Pick one. We go take am from there.</span>
+                <span>WHICH ONE FEELS LIKE YOU?</span>
+                <span>Pick one—or tell me in your own words.</span>
               </div>
               <div className="suggestions" aria-label="Ways to get started">
                 {starterPrompts.map((prompt) => (
@@ -240,6 +624,7 @@ export default function ChatInterface() {
               </div>
               <p className="welcome-note">
                 English · Pidgin · Yorùbá · Igbo — talk how you like.
+                No laptop or coding experience needed to start exploring.
               </p>
             </div>
           ) : (
@@ -258,7 +643,7 @@ export default function ChatInterface() {
                   </div>
                   <div className="message-content">
                     <p className="message-author">
-                      {message.role === "assistant" ? "SABI" : "You"}
+                      {message.role === "assistant" ? "SabiPath" : "You"}
                     </p>
                     <div className="message-text">
                       {message.parts.map((part, index) =>
@@ -327,8 +712,8 @@ export default function ChatInterface() {
           <form className="composer" onSubmit={handleSubmit}>
             <textarea
               ref={textareaRef}
-              aria-label="Message SABI"
-              placeholder="Wetin you enjoy, wetin you sabi, or just say hi..."
+              aria-label="Message SabiPath"
+              placeholder="Wetin you enjoy or find easy? Tell me—we'll find your tech fit..."
               rows={1}
               value={input}
               onChange={(event) => {
@@ -384,7 +769,7 @@ export default function ChatInterface() {
             </div>
           </form>
           <p className="disclaimer">
-          No one-size-fits-all path. Your next step, your pace.
+            No experience needed. Your next step, your pace.
           </p>
         </div>
       </section>
