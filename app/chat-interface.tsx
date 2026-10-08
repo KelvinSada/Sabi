@@ -371,14 +371,13 @@ export default function ChatInterface() {
         <Link className="brand" href="/" aria-label="SabiPath — find your place in tech">
           <Image
             className="brand-logo"
-            src="/sabi_logo_pic.png"
-            alt=""
-            width={640}
-            height={640}
+            src="/sabipath-logo.png"
+            alt="SabiPath"
+            width={1220}
+            height={1130}
             priority
           />
           <span className="brand-copy">
-            <span className="brand-name">SabiPath</span>
             <span className="brand-product">your place in tech starts here.</span>
           </span>
         </Link>

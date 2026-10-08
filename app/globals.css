@@ -104,9 +104,9 @@ textarea:focus-visible {
 }
 
 .brand-logo {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 68px;
+  height: 64px;
+  flex: 0 0 68px;
   object-fit: contain;
 }
 
@@ -1149,9 +1149,9 @@ kbd {
   }
 
   .brand-logo {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
+    width: 56px;
+    height: 52px;
+    flex-basis: 56px;
   }
 
   .brand-product {
