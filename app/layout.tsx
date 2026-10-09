@@ -14,17 +14,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sabi-psi.vercel.app"),
-  title: "Sabi | Find your place in tech",
+  title: "Sabi | Find a tech skill that fits you",
   description:
-    "Not sure which tech skill is right for you? Sabi helps young Nigerians match their strengths and interests to a tech path that fits—starting with what they have.",
+    "A friendly guide for young Nigerians to match their strengths and interests with a tech skill to explore. No experience needed—start with what you have.",
   openGraph: {
     type: "website",
     url: "https://sabi-psi.vercel.app",
     siteName: "Sabi",
     locale: "en_NG",
-    title: "Sabi | Find your place in tech",
+    title: "Sabi | Find a tech skill that fits you",
     description:
-      "Find a tech skill that fits your strengths, interests, and starting point. A welcoming guide for young Nigerians exploring tech.",
+      "Explore tech skills that fit what you enjoy and do well. A welcoming, beginner-friendly guide for young Nigerians—start with what you have.",
     images: [
       {
         url: "/sabi_logo_pic.png",
@@ -36,9 +36,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Sabi | Find your place in tech",
+    title: "Sabi | Find a tech skill that fits you",
     description:
-      "Find a tech skill that fits your strengths, interests, and starting point. Made for young Nigerians exploring tech.",
+      "Find a tech skill that fits your strengths and interests. A beginner-friendly guide for young Nigerians, with English, Pidgin, Yorùbá, and Igbo support.",
     images: [
       {
         url: "/sabi_logo_pic.png",
